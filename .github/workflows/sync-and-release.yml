@@ -1,0 +1,121 @@
+name: Sync Upstream & Release
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: sync-and-release
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      needed: ${{ steps.check.outputs.needed }}
+      tag: ${{ steps.check.outputs.tag }}
+
+    steps:
+      - name: Check upstream for new release
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          UPSTREAM="moo-man/WarhammerLibrary-FVTT"
+          TAG=$(gh api "repos/${UPSTREAM}/releases/latest" --jq '.tag_name' 2>/dev/null || echo "")
+          if [ -z "$TAG" ]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+          EXISTING=$(gh release view "$TAG" --repo "${{ github.repository }}" --json tagName 2>/dev/null || echo "")
+          if [ -n "$EXISTING" ]; then
+            echo "Fork already has release ${TAG}"
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "New upstream release: ${TAG}"
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  sync-and-release:
+    needs: check
+    if: needs.check.outputs.needed == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync with upstream
+        run: |
+          git remote add upstream https://github.com/moo-man/WarhammerLibrary-FVTT.git || true
+          git fetch upstream --tags
+          git reset --hard "refs/tags/${{ needs.check.outputs.tag }}"
+
+      - name: Apply patches
+        run: |
+          for f in src/util/utility.js src/modules/bug-report.js src/modules/module-initializationV2.js; do
+            [ -f "$f" ] && sed -i 's/\.premiumModules/.moduleRegistry/g' "$f"
+          done
+          grep -q 'moduleRegistry' src/util/utility.js || { echo "PATCH FAILED"; exit 1; }
+
+          # Rewrite upstream URLs to point to our fork
+          sed -i 's|moo-man/WarhammerLibrary-FVTT|pfizrak/WarhammerLibrary-FVTT|g' module.json
+
+      - name: Restore fork workflows
+        run: |
+          mkdir -p .github/workflows
+          curl -sL "https://raw.githubusercontent.com/${{ github.repository }}/master/.github/workflows/release.yml" \
+            -o .github/workflows/release.yml
+          curl -sL "https://raw.githubusercontent.com/${{ github.repository }}/master/.github/workflows/sync-and-release.yml" \
+            -o .github/workflows/sync-and-release.yml
+
+      - name: Commit and push
+        env:
+          TAG: ${{ needs.check.outputs.tag }}
+        run: |
+          git add -A
+          git diff --cached --quiet || git commit -m "Apply local configuration"
+          git tag -f "${TAG}"
+          git push origin master --force
+          git push origin "refs/tags/${TAG}" --force
+
+      - name: Trigger release and wait
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.check.outputs.tag }}
+        run: |
+          BEFORE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          gh workflow run release.yml --repo "${{ github.repository }}" --ref "${TAG}" -f tag="${TAG}"
+          sleep 10
+
+          RUN_ID=""
+          for i in $(seq 1 30); do
+            RUN_ID=$(gh api "repos/${{ github.repository }}/actions/workflows/release.yml/runs" \
+              --jq "[.workflow_runs[] | select(.created_at >= \"$BEFORE\")][0].id" 2>/dev/null || echo "")
+            [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ] && break
+            RUN_ID=""
+            sleep 5
+          done
+          [ -z "$RUN_ID" ] && { echo "Could not find release run"; exit 1; }
+          gh run watch "$RUN_ID" --repo "${{ github.repository }}" --exit-status
+
+      - name: Copy upstream release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.check.outputs.tag }}
+        run: |
+          BODY=$(gh release view "${TAG}" --repo moo-man/WarhammerLibrary-FVTT --json body -q .body 2>/dev/null || echo "")
+          [ -n "$BODY" ] && echo "$BODY" | gh release edit "${TAG}" --repo "${{ github.repository }}" --notes-file -
