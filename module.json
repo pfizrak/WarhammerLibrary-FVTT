@@ -49,6 +49,6 @@
     }
   },
   "socket": true,
-  "manifest": "https://github.com/moo-man/WarhammerLibrary-FVTT/releases/latest/download/module.json",
-  "download": "https://github.com/moo-man/WarhammerLibrary-FVTT/releases/download/3.1.0/warhammer-lib.zip"
+  "manifest": "https://github.com/pfizrak/WarhammerLibrary-FVTT/releases/latest/download/module.json",
+  "download": "https://github.com/pfizrak/WarhammerLibrary-FVTT/releases/download/3.1.0/warhammer-lib.zip"
 }
