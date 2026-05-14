@@ -37,6 +37,7 @@ export default class WarhammerEffectShapeConfig extends WHFormApplication
         },
         data.types = {
             "circle" : "Circle",
+            "emanation" : "Emanation",
             "cone" : "Cone",
             "rectangle" : "Rectangle",
             "ellipse" : "Ellipse",

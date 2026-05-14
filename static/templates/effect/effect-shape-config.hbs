@@ -28,6 +28,12 @@
         {{#if (eq source.type "circle")}}
 
         {{/if}}
+
+        {{#if (eq source.type "emanation")}}
+            {{formGroup fields.base.fields.width value=source.base.width label="Base Width"}}
+            {{formGroup fields.base.fields.height value=source.base.height label="Base Height"}}
+            {{formGroup fields.base.fields.hole value=source.base.hole label="Hole"}}
+        {{/if}}
         
         {{#if (eq source.type "cone")}}
             {{formGroup fields.curvature value=source.curvature choices=curvatures label="Curvature"}}

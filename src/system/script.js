@@ -110,9 +110,9 @@ export default class WarhammerScript
         }
     }
 
-    notification(content, type="info")
+    notification(content, type="info", permanent=false)
     {
-        ui.notifications.notify(`<strong>${this.context.effect.name}</strong>: ${content}`, type);
+        ui.notifications.notify(`<strong>${this.context.effect.name}</strong>: ${content}`, type, {permanent});
     }
 
     message(content, chatData={})

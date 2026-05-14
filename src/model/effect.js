@@ -47,7 +47,15 @@ export class WarhammerActiveEffectModel extends foundry.abstract.DataModel
                     height: new fields.NumberField(),
                     length: new fields.NumberField(),
                     angle: new fields.NumberField({initial: 60}),
-                    curvature: new fields.StringField({initial: "round"})
+                    curvature: new fields.StringField({initial: "round"}),
+                    base: new fields.SchemaField({
+                        // Used for emanations
+                        width: new fields.NumberField({initial: 1}),
+                        height: new fields.NumberField({initial: 1}),
+                        hole: new fields.BooleanField({initial: false}),
+                        shape: new fields.NumberField({initial: 4}),
+                        type: new fields.StringField({initial: "token"})
+                    })
                 }), //new fields.TypedSchemaField(foundry.data.BaseShapeData.TYPES, {required: false}),
 
                 keep: new fields.BooleanField({ initial: false }), // Area/Aura - should they keep the effect when leaving

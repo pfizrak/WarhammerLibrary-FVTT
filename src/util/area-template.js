@@ -1,3 +1,4 @@
+import ValueDialog from "../apps/value-dialog";
 import { getActiveDocumentOwner } from "./utility";
 
 /**
@@ -89,6 +90,11 @@ export default class AreaTemplate extends foundry.canvas.placeables.Region
 
         radius = radius || Number(effectData.system.transferData.area.radius) || effect?.radius; 
 
+        if (!radius)
+        {
+            radius = parseInt(await ValueDialog.create({text: `Radius could not be determined automatically, please enter it below.<br>Formula: ${effectData.system.transferData.area.radius}`}));
+        }
+
         let shapeData = effectData.system.transferData.area.shape;
 
         shapeData.radius = this._convertGridUnits(radius);
@@ -98,10 +104,11 @@ export default class AreaTemplate extends foundry.canvas.placeables.Region
         shapeData.length = this._convertGridUnits(shapeData.length);
         shapeData.x = 0;
         shapeData.y = 0;
+        shapeData.base.x = 0;
+        shapeData.base.y = 0;
 
         shapeData.radiusX = shapeData.width;
         shapeData.radiusY = shapeData.height;
-
 
         // Prepare template data
         const templateData = {
@@ -109,6 +116,7 @@ export default class AreaTemplate extends foundry.canvas.placeables.Region
             name: effectData.name,
             color: shapeData.color || game.user.color,
             visibility: 3,
+            displayMeasurements: true,
             shapes : [shapeData],
             flags: {
                 [game.system.id]: {
@@ -259,6 +267,14 @@ export default class AreaTemplate extends foundry.canvas.placeables.Region
 
     _updateShape(data={})
     {
+        if (data.x)
+        {
+            foundry.utils.setProperty(data, "base.x", data.x - (canvas.grid.size / 2)); // Place emanation base at center of cursor
+        }
+        if (data.y)
+        {
+            foundry.utils.setProperty(data, "base.y", data.y - (canvas.grid.size / 2)); // Place emanation base at center of cursor
+        }
         let shape = this.document.shapes[0].toObject();
         foundry.utils.mergeObject(shape, data);
         this.document.updateSource({shapes: [shape]});
@@ -327,7 +343,9 @@ export default class AreaTemplate extends foundry.canvas.placeables.Region
         await this._finishPlacement(event);
         const destination = this.getSnappedPosition(this.document.shapes[0]);
         this._updateShape(destination);
-        this.#events.resolve(CONFIG.Region.documentClass.create(this.document.toObject(), {parent: this.document.parent}).then(region =>  
+        let regionData = this.document.toObject();
+        regionData.displayMeasurements = false;
+        this.#events.resolve(CONFIG.Region.documentClass.create(regionData, {parent: this.document.parent}).then(region =>  
         {
             let test = game.messages.get(region.flags[game.system.id].messageId)?.system?.test;
             if (test && test.data.context.templates)

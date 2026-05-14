@@ -293,6 +293,7 @@ export default class WarhammerRollDialogV2 extends HandlebarsApplicationMixin(Ap
         }
 
         let submitData = this._getSubmissionData();
+        this.onSubmit(submitData);
 
         if (this.resolve)
         {
@@ -341,6 +342,12 @@ export default class WarhammerRollDialogV2 extends HandlebarsApplicationMixin(Ap
             }
         }
         return submitData;
+    }
+
+    // Actions to be performed after submission
+    async onSubmit(submitData)
+    {
+
     }
 
     /**

@@ -670,7 +670,15 @@ export default class WarhammerActiveEffect extends CONFIG.ActiveEffect.documentC
         {
             return this.system.transferData.area.radius;
         }
-        return Roll.safeEval(Roll.getFormula(Roll.parse(this.system.transferData.area.radius, {effect : this, actor : this.actor, item : this.item})));
+        try 
+        {
+            return Roll.safeEval(Roll.getFormula(Roll.parse(this.system.transferData.area.radius, {effect : this, actor : this.actor, item : this.item})));
+        }
+        catch(e) 
+        {
+            console.log("Could not resolve radius: " + e);
+            return null;
+        }
     }
 
     get key () 
@@ -790,7 +798,22 @@ export default class WarhammerActiveEffect extends CONFIG.ActiveEffect.documentC
 
     get sourceActor() 
     {
-        return !foundry.utils.isEmpty(this.sourceTest) ? CONFIG.ChatMessage.documentClass.getSpeakerActor(this.sourceTest.context.speaker) : this.sourceItem?.actor;
+        if (this.sourceTest && !foundry.utils.isEmpty(this.sourceTest))
+        {
+            return CONFIG.ChatMessage.documentClass.getSpeakerActor(this.sourceTest.context.speaker);   
+        }
+        else if (this.sourceItem)
+        {
+            return this.sourceItem?.actor;
+        }
+        else if (this.sourceArea)
+        {
+            return this.sourceArea.attachment.token?.actor;
+        }
+        else 
+        {
+            return null;
+        }
     }
 
     get sourceItem() 
@@ -826,5 +849,26 @@ export default class WarhammerActiveEffect extends CONFIG.ActiveEffect.documentC
         }
         delete createData.id;
         return createData;
+    }
+
+    /**
+     * 
+     * @inheritdoc
+     * @param {object} config Configuration for embedding behavior, changes for each system/type
+     */
+    async toEmbed(config, options={})
+    {
+
+        let el = document.createElement("div");
+        if (config.includeName)
+        {
+            el.innerHTML = await TextEditor.enrichHTML(this.description.replace("<p>", `<p>@UUID[${this.uuid}]{${config.label || this.name}}: `), {relativeTo: this});
+        }
+        else 
+        {
+            el.innerHTML = await TextEditor.enrichHTML(this.description, {relativeTo: this});
+        }
+
+        return el;
     }
 }
