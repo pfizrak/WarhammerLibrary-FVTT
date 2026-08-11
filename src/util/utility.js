@@ -318,15 +318,15 @@ export function addLinkSources(html)
         if (uuid)
         {
             let moduleKey = uuid.split(".")[1];
-            if (systemConfig().premiumModules[moduleKey])
+            if (systemConfig().moduleRegistry[moduleKey])
             {
                 if (!tooltip)
                 {
-                    tooltip = `${foundry.utils.parseUuid(uuid).type} (${systemConfig().premiumModules[moduleKey]})`;
+                    tooltip = `${foundry.utils.parseUuid(uuid).type} (${systemConfig().moduleRegistry[moduleKey]})`;
                 }
                 else 
                 {
-                    tooltip += ` (${systemConfig().premiumModules[moduleKey]})`;
+                    tooltip += ` (${systemConfig().moduleRegistry[moduleKey]})`;
                 }
             }
         }
@@ -493,7 +493,7 @@ export function getCompendiumName(uuid)
  */
 export function registerPremiumModuleInitialization()
 {
-    for(let module in systemConfig().premiumModules)
+    for(let module in systemConfig().moduleRegistry)
     {
         if (game.modules.get(module)?.active)
         {
