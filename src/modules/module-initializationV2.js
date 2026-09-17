@@ -35,7 +35,7 @@ export class WarhammerModuleInitializationV2 extends HandlebarsApplicationMixin(
     async _prepareContext(options)
     {
         let context = await super._prepareContext(options);
-        context.modules = Object.keys(systemConfig().premiumModules).filter(i => i != game.system.id).map(m => 
+        context.modules = Object.keys(systemConfig().moduleRegistry).filter(i => i != game.system.id).map(m => 
         {
             let module = game.modules.get(m)?.toJSON();
             let moduleData = {
@@ -43,7 +43,7 @@ export class WarhammerModuleInitializationV2 extends HandlebarsApplicationMixin(
                 active : game.modules.get(m)?.active,
                 initialized : game.modules.get(m)?.active && game.settings.get(m, "initialized"),
                 data : module,
-                title : systemConfig().premiumModules[m]
+                title : systemConfig().moduleRegistry[m]
             };            
             if (!moduleData.installed)
             {
