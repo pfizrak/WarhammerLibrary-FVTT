@@ -165,7 +165,7 @@ export default class WarhammerBugReporter extends HandlebarsApplicationMixin(App
         let context = await super._prepareContext(options);
         await this.loadingIssues;
         context.tabs = this._prepareTabs();
-        context.modules = systemConfig().premiumModules;
+        context.modules = systemConfig().moduleRegistry;
         context.settings = this.settings;
         context.record = await this.buildRecord();
         if (context.record.alert)
@@ -357,7 +357,7 @@ export default class WarhammerBugReporter extends HandlebarsApplicationMixin(App
     {
         let latest = {};
         warhammer.utility.log("Checking Version Numbers...");
-        for (let key in systemConfig().premiumModules) 
+        for (let key in systemConfig().moduleRegistry) 
         {
             if (key == game.system.id) 
             {
@@ -454,7 +454,7 @@ export default class WarhammerBugReporter extends HandlebarsApplicationMixin(App
             throw game.i18n.localize("WH.BugReporter.Error.Incomplete");
         };
 
-        report.title = `[${systemConfig().premiumModules[report.module]}] ${report.title}`;
+        report.title = `[${systemConfig().moduleRegistry[report.module]}] ${report.title}`;
         report.description = report.description + `<br/>**From**: ${report.contact}`;
 
         report.labels = [this.keyToLabel(report.module)].filter(i => i);
@@ -473,7 +473,7 @@ export default class WarhammerBugReporter extends HandlebarsApplicationMixin(App
             PAT : report.PAT, 
         });
 
-        let premiumModules = Array.from(game.modules).filter(m => systemConfig().premiumModules[m.id]);
+        let premiumModules = Array.from(game.modules).filter(m => systemConfig().moduleRegistry[m.id]);
 
         let versions = `<br/>foundry: ${game.version}<br/>${game.system.id}: ${game.system.version}`;
 
@@ -484,7 +484,7 @@ export default class WarhammerBugReporter extends HandlebarsApplicationMixin(App
         }
 
         report.description = report.description.concat(versions);
-        report.description += `<br/>Active Modules: ${game.modules.contents.filter(i => i.active).map(i => i.id).filter(i => !systemConfig().premiumModules[i]).join(", ")}`;
+        report.description += `<br/>Active Modules: ${game.modules.contents.filter(i => i.active).map(i => i.id).filter(i => !systemConfig().moduleRegistry[i]).join(", ")}`;
 
         this.sendIssue(report);
     }
